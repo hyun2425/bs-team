@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>농구부 팀 관리 시스템</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏀 대장부 팀관리 시스템 v2.2</h1>
+            <!-- <p>코치님, 효율적인 팀 구성을 도와드립니다!</p> -->
+        </div>
+        
+        <div class="content">
+            <!-- 팀 표시 섹션 -->
+            <div class="section team-display" th:if="${!teams.empty}">
+                <h2>🏆 생성된 팀</h2>
+                <div class="teams-container">
+                    <div th:each="team, iterStat : ${teams}" 
+                         th:data-team-index="${iterStat.index}"
+                         class="team-card"
+                         ondrop="drop(event)"
+                         ondragover="allowDrop(event)">
+                        <div class="team-header">
+                            <div class="team-name" th:text="${team.name}">팀명</div>
+                            <div class="team-stats">
+                                선수 수: <span th:text="${team.playerCount}">0</span>명 | 
+                                핸들러: <span th:text="${team.handlerCount}">0</span>명 | 
+                                총 공격: <span th:text="${team.totalAttackPower}">0</span> | 
+                                총 수비: <span th:text="${team.totalDefensePower}">0</span> | 
+                                평균 키: <span th:text="${#numbers.formatDecimal(team.averageHeight, 1, 1)}">0</span>cm
+                            </div>
+                        </div>
+                        
+                        <div class="team-players">
+                            <div th:each="player : ${team.players}" 
+                                 class="player-card draggable"
+                                 th:data-player-name="${player.name}"
+                                 draggable="true"
+                                 ondragstart="drag(event)">
+                                <div class="player-name" th:text="${player.name}">선수명</div>
+                                <div class="player-details">
+                                    <span th:text="${player.position}">포지션</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 선수 목록 섹션 -->
+            <div class="section player-list-section">
+                <h2>👥 전체 선수 목록 
+                    <span class="selected-count" id="selectedCount" style="display: none;">
+                        (선택됨: <span id="selectedCountNumber">0</span>명)
+                    </span>
+                </h2>
+                
+                <!-- 에러 메시지 -->
+                <div th:if="${error}" class="error-message" th:text="${error}"></div>
+                
+                <div class="player-list">
+                    <div th:each="player : ${players}" 
+                         class="player-card selectable-player"
+                         th:data-player-name="${player.name}"
+                         th:data-player-position="${player.position}"
+                         th:data-player-height="${player.height}"
+                         th:data-player-attack="${player.attackPower}"
+                         th:data-player-defense="${player.defensePower}"
+                         th:data-player-handler="${player.handler}"
+                         onclick="togglePlayerSelection(this)"
+                         style="cursor: pointer;">
+                        <div class="player-name" th:text="${player.name}">선수명</div>
+                        <div class="player-details">
+                            <div><span th:text="${player.position}">포지션</span></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 팀 생성 및 초기화 버튼 -->
+                <div class="team-creation-section">
+                    <div class="button-group">
+                        <button type="button" class="btn btn-create-teams" 
+                                id="createTeamsBtn"
+                                onclick="createTeams()"
+                                disabled>
+                            팀 생성하기
+                        </button>
+                        
+                        <button type="button" class="btn btn-reset" 
+                                id="resetBtn"
+                                onclick="resetSelection()"
+                                disabled>
+                            초기화
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 숨겨진 선택된 선수들 데이터 -->
+                <div id="selectedPlayersData" style="display: none;">
+                    <span th:each="playerName : ${selectedPlayers}" th:text="${playerName}"></span>
+                </div>
+                
+                <!-- JSON 형태로 선택된 선수들 데이터 -->
+                <script th:inline="javascript">
+                    var serverSelectedPlayersJson = /*[[${selectedPlayers}]]*/ [];
+                    console.log('JSON으로 받은 선택된 선수들:', serverSelectedPlayersJson);
+                </script>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 선택된 선수들을 저장할 배열
+        let selectedPlayers = [];
+        
+        // 페이지 로드 시 기존 선택 상태 복원
+        document.addEventListener('DOMContentLoaded', function() {
+            // Thymeleaf 변수 직접 확인
+            console.log('Thymeleaf selectedPlayers 직접 확인:', /*[[${selectedPlayers}]]*/ 'null');
+            console.log('Thymeleaf selectedPlayers 크기:', /*[[${selectedPlayers.size()}]]*/ '0');
+            
+            // JSON으로 받은 선택된 선수들 사용
+            console.log('JSON으로 받은 선택된 선수들:', typeof serverSelectedPlayersJson !== 'undefined' ? serverSelectedPlayersJson : 'undefined');
+            
+            // 숨겨진 데이터에서 선택된 선수들 읽기 (백업 방법)
+            const selectedPlayersData = document.getElementById('selectedPlayersData');
+            const serverSelectedPlayers = [];
+            
+            if (selectedPlayersData) {
+                const spans = selectedPlayersData.querySelectorAll('span');
+                spans.forEach(span => {
+                    serverSelectedPlayers.push(span.textContent.trim());
+                });
+            }
+            
+            console.log('숨겨진 데이터에서 읽은 선택된 선수들:', serverSelectedPlayers);
+            
+            // JSON 데이터가 있으면 사용, 없으면 숨겨진 데이터 사용
+            const finalSelectedPlayers = (typeof serverSelectedPlayersJson !== 'undefined' && serverSelectedPlayersJson && serverSelectedPlayersJson.length > 0) 
+                ? serverSelectedPlayersJson 
+                : serverSelectedPlayers;
+            
+            console.log('최종 사용할 선택된 선수들:', finalSelectedPlayers);
+            
+            if (finalSelectedPlayers && finalSelectedPlayers.length > 0) {
+                selectedPlayers = [...finalSelectedPlayers];
+                console.log('복원할 선택된 선수들:', selectedPlayers);
+                
+                // 선택된 선수들의 UI 상태 복원
+                selectedPlayers.forEach(playerName => {
+                    const playerElement = document.querySelector(`.selectable-player[data-player-name="${playerName}"]`);
+                    if (playerElement) {
+                        playerElement.classList.add('selected');
+                        console.log('선택 상태 복원:', playerName);
+                    } else {
+                        console.log('선수 요소를 찾을 수 없음:', playerName);
+                    }
+                });
+                
+                updateUI();
+            } else {
+                console.log('복원할 선택된 선수가 없음');
+            }
+        });
+        
+        // 선수 선택/해제 토글
+        function togglePlayerSelection(element) {
+            const playerName = element.getAttribute('data-player-name');
+            const index = selectedPlayers.indexOf(playerName);
+            
+            if (index > -1) {
+                // 이미 선택된 경우 제거
+                selectedPlayers.splice(index, 1);
+                element.classList.remove('selected');
+            } else {
+                // 선택되지 않은 경우 추가
+                selectedPlayers.push(playerName);
+                element.classList.add('selected');
+            }
+            
+            updateUI();
+        }
+        
+        // UI 업데이트
+        function updateUI() {
+            const selectedCount = document.getElementById('selectedCount');
+            const selectedCountNumber = document.getElementById('selectedCountNumber');
+            const createTeamsBtn = document.getElementById('createTeamsBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            
+            // 선택된 선수 수 표시
+            if (selectedPlayers.length > 0) {
+                selectedCount.style.display = 'inline';
+                selectedCountNumber.textContent = selectedPlayers.length;
+            } else {
+                selectedCount.style.display = 'none';
+            }
+            
+            // 버튼 활성화/비활성화
+            createTeamsBtn.disabled = selectedPlayers.length < 2;
+            resetBtn.disabled = selectedPlayers.length === 0;
+        }
+        
+        // 팀 생성
+        function createTeams() {
+            if (selectedPlayers.length < 8) {
+                alert('최소 8d
+                명의 선수를 선택해주세요.');
+                return;
+            }
+            
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/create-teams';
+            
+            // 선택된 선수들을 hidden input으로 추가
+            selectedPlayers.forEach(playerName => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'selectedPlayers';
+                input.value = playerName;
+                form.appendChild(input);
+            });
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+        
+        // 선택 초기화
+        function resetSelection() {
+            selectedPlayers = [];
+            
+            // 모든 선택된 선수 카드에서 selected 클래스 제거
+            document.querySelectorAll('.selectable-player.selected').forEach(element => {
+                element.classList.remove('selected');
+            });
+            
+            updateUI();
+            
+            // 서버로 초기화 요청
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/reset';
+            document.body.appendChild(form);
+            form.submit();
+        }
+        
+        // 드래그 앤 드롭 함수들
+        function allowDrop(ev) {
+            ev.preventDefault();
+        }
+        
+        function drag(ev) {
+            ev.dataTransfer.setData("text", ev.target.getAttribute('data-player-name'));
+            ev.target.style.opacity = "0.5";
+        }
+        
+        function drop(ev) {
+            ev.preventDefault();
+            const playerName = ev.dataTransfer.getData("text");
+            const targetTeamIndex = ev.currentTarget.getAttribute('data-team-index');
+            
+            // 드래그된 요소의 투명도 복원
+            const draggedElement = document.querySelector('.draggable[data-player-name="' + playerName + '"]');
+            if (draggedElement) {
+                draggedElement.style.opacity = "1";
+            }
+            
+            // 서버로 이동 요청
+            movePlayerToTeam(playerName, targetTeamIndex);
+        }
+        
+        function movePlayerToTeam(playerName, teamIndex) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/move-player';
+            
+            const playerInput = document.createElement('input');
+            playerInput.type = 'hidden';
+            playerInput.name = 'playerName';
+            playerInput.value = playerName;
+            
+            const teamInput = document.createElement('input');
+            teamInput.type = 'hidden';
+            teamInput.name = 'teamIndex';
+            teamInput.value = teamIndex;
+            
+            // 선택된 선수들도 함께 전송
+            selectedPlayers.forEach(playerName => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'selectedPlayers';
+                input.value = playerName;
+                form.appendChild(input);
+            });
+            
+            form.appendChild(playerInput);
+            form.appendChild(teamInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    </script>
+</body>
+</html> 
