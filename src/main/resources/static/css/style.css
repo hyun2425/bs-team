@@ -175,6 +175,66 @@ body {
     box-shadow: 0 4px 15px rgba(156, 163, 175, 0.3);
 }
 
+.image-upload-section {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.upload-container {
+    text-align: center;
+}
+
+.btn-upload {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+    font-size: 16px;
+    padding: 16px 32px;
+    border-radius: 16px;
+    min-width: 200px;
+}
+
+.btn-upload:hover {
+    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+}
+
+.btn-ocr {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+    font-size: 14px;
+    padding: 12px 24px;
+    border-radius: 12px;
+    min-width: 150px;
+}
+
+.btn-ocr:hover {
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+}
+
+.btn-ocr:disabled {
+    background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+    box-shadow: 0 4px 15px rgba(156, 163, 175, 0.3);
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-ocr:disabled:hover {
+    transform: none;
+    box-shadow: 0 4px 15px rgba(156, 163, 175, 0.3);
+}
+
+.btn-cancel {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    box-shadow: 0 4px 15px rgba(107, 114, 128, 0.3);
+    font-size: 14px;
+    padding: 12px 24px;
+    border-radius: 12px;
+    min-width: 100px;
+}
+
+.btn-cancel:hover {
+    box-shadow: 0 8px 25px rgba(107, 114, 128, 0.4);
+}
+
 .player-list-section {
     background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(245, 158, 11, 0.1) 100%);
     border: 1px solid rgba(251, 191, 36, 0.2);
