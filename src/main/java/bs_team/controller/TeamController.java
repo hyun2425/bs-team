@@ -62,9 +62,6 @@ public class TeamController {
         players.add(new Player("한동엽", 180, "센터", 4, 10, false));
         players.add(new Player("현상주", 175, "포워드", 9, 7, true));
 
-        players.add(new Player("게스트-1", 180, "센터", 7, 7, false));
-        players.add(new Player("게스트-2", 180, "포워드", 7, 7, false));
-        players.add(new Player("게스트-3", 180, "가드", 7, 7, false));
     }
 
     @GetMapping("/")
@@ -215,6 +212,42 @@ public class TeamController {
         return "index";
     }
 
+    @PostMapping("/add-guest")
+    public String addGuest(@RequestParam String guestName,
+                           @RequestParam(defaultValue = "가드") String guestPosition,
+                           @RequestParam(value = "selectedPlayers", required = false) List<String> selectedPlayers,
+                           Model model) {
+        String normalizedName = guestName == null ? "" : guestName.trim();
+        String normalizedPosition = normalizePosition(guestPosition);
+
+        if (selectedPlayers != null) {
+            this.selectedPlayers = new ArrayList<>(selectedPlayers);
+        }
+
+        if (normalizedName.isEmpty()) {
+            model.addAttribute("error", "게스트 이름을 입력해주세요.");
+            model.addAttribute("players", players);
+            model.addAttribute("teams", teams);
+            model.addAttribute("selectedPlayers", this.selectedPlayers);
+            return "index";
+        }
+
+        String guestPlayerName = "게스트 - " + normalizedName;
+        boolean exists = players.stream().anyMatch(player -> player.getName().equals(guestPlayerName));
+        if (!exists) {
+            players.add(new Player(guestPlayerName, 180, normalizedPosition, 7, 7, false));
+        }
+
+        if (!this.selectedPlayers.contains(guestPlayerName)) {
+            this.selectedPlayers.add(guestPlayerName);
+        }
+
+        model.addAttribute("players", players);
+        model.addAttribute("teams", teams);
+        model.addAttribute("selectedPlayers", this.selectedPlayers);
+        return "index";
+    }
+
 
     @PostMapping("/upload-image")
     public ResponseEntity<Map<String, Object>> uploadImage(@RequestPart("image") MultipartFile file) {
@@ -270,6 +303,13 @@ public class TeamController {
             case "가드" -> 3;
             default -> 4;
         };
+    }
+
+    private String normalizePosition(String position) {
+        if ("센터".equals(position) || "포워드".equals(position) || "가드".equals(position)) {
+            return position;
+        }
+        return "가드";
     }
 
     // 정확한 반반 분배를 보장하는 팀 선택 메서드 (반반 분배가 최우선)

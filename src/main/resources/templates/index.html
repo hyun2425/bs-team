@@ -75,6 +75,16 @@
                 <!-- 에러 메시지 -->
                 <div th:if="${error}" class="error-message" th:text="${error}"></div>
 
+                <div class="guest-add-panel">
+                    <input type="text" id="guestNameInput" placeholder="게스트 이름" maxlength="20">
+                    <select id="guestPositionSelect" aria-label="게스트 포지션">
+                        <option value="가드">가드</option>
+                        <option value="포워드">포워드</option>
+                        <option value="센터">센터</option>
+                    </select>
+                    <button type="button" class="btn btn-add-guest" onclick="addGuest()">게스트 추가</button>
+                </div>
+
                 <div class="player-list">
                     <div th:each="player : ${players}"
                          class="player-card selectable-player"
@@ -231,6 +241,45 @@
             form.action = '/create-teams';
 
             // 선택된 선수들을 hidden input으로 추가
+            selectedPlayers.forEach(playerName => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'selectedPlayers';
+                input.value = playerName;
+                form.appendChild(input);
+            });
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        function addGuest() {
+            const guestNameInput = document.getElementById('guestNameInput');
+            const guestPositionSelect = document.getElementById('guestPositionSelect');
+            const guestName = guestNameInput.value.trim();
+
+            if (!guestName) {
+                alert('게스트 이름을 입력해주세요.');
+                guestNameInput.focus();
+                return;
+            }
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/add-guest';
+
+            const nameInput = document.createElement('input');
+            nameInput.type = 'hidden';
+            nameInput.name = 'guestName';
+            nameInput.value = guestName;
+            form.appendChild(nameInput);
+
+            const positionInput = document.createElement('input');
+            positionInput.type = 'hidden';
+            positionInput.name = 'guestPosition';
+            positionInput.value = guestPositionSelect.value;
+            form.appendChild(positionInput);
+
             selectedPlayers.forEach(playerName => {
                 const input = document.createElement('input');
                 input.type = 'hidden';
@@ -408,4 +457,4 @@
             }
         }    </script>
 </body>
-</html> 
+</html>
