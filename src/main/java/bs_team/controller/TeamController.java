@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -62,6 +63,12 @@ public class TeamController {
         players.add(new Player("한동엽", 180, "센터", 4, 10, false));
         players.add(new Player("현상주", 175, "포워드", 9, 7, true));
 
+        players.add(new Player("게스트-1", 180, "가드", 7, 7, false));
+        players.add(new Player("게스트-2", 180, "가드", 7, 7, false));
+        players.add(new Player("게스트-3", 180, "가드", 7, 7, false));
+        players.add(new Player("게스트-4", 180, "가드", 7, 7, false));
+        players.add(new Player("게스트-5", 180, "가드", 7, 7, false));
+        players.add(new Player("게스트-6", 180, "가드", 7, 7, false));
     }
 
     @GetMapping("/")
@@ -79,16 +86,14 @@ public class TeamController {
 
     @PostMapping("/create-teams")
     public String createTeams(@RequestParam(value = "selectedPlayers", required = false) List<String> selectedPlayers,
-                             Model model) {
+                              RedirectAttributes redirectAttributes) {
         teams.clear();
 
         // 선택된 선수가 없거나 2명 미만인 경우
         if (selectedPlayers == null || selectedPlayers.size() < 8) {
-            model.addAttribute("error", "최소 8명의 선수를 선택해주세요.");
-            model.addAttribute("players", players);
-            model.addAttribute("teams", teams);
-            model.addAttribute("selectedPlayers", selectedPlayers != null ? selectedPlayers : new ArrayList<>());
-            return "index";
+            this.selectedPlayers = selectedPlayers != null ? new ArrayList<>(selectedPlayers) : new ArrayList<>();
+            redirectAttributes.addFlashAttribute("error", "최소 8명의 선수를 선택해주세요.");
+            return "redirect:/";
         }
 
         // 선택된 선수들을 저장
@@ -165,17 +170,13 @@ public class TeamController {
         System.out.println("모델에 전달할 선택된 선수들: " + this.selectedPlayers);
         System.out.println("모델에 전달할 선택된 선수들 크기: " + this.selectedPlayers.size());
 
-        model.addAttribute("players", players);
-        model.addAttribute("teams", teams);
-        model.addAttribute("selectedPlayers", this.selectedPlayers);
-        return "index";
+        return "redirect:/";
     }
 
     @PostMapping("/move-player")
     public String movePlayer(@RequestParam String playerName,
                            @RequestParam int teamIndex,
-                           @RequestParam(value = "selectedPlayers", required = false) List<String> selectedPlayers,
-                           Model model) {
+                           @RequestParam(value = "selectedPlayers", required = false) List<String> selectedPlayers) {
         // 드래그 앤 드롭으로 선수를 다른 팀으로 이동
         Player selectedPlayer = players.stream()
                 .filter(p -> p.getName().equals(playerName))
@@ -194,60 +195,17 @@ public class TeamController {
             this.selectedPlayers = new ArrayList<>(selectedPlayers);
         }
 
-        model.addAttribute("players", players);
-        model.addAttribute("teams", teams);
-        model.addAttribute("selectedPlayers", this.selectedPlayers);
-        return "index";
+        return "redirect:/";
     }
 
     @PostMapping("/reset")
-    public String reset(Model model) {
+    public String reset() {
         // 모든 팀과 선택된 선수 초기화
         teams.clear();
         selectedPlayers.clear();
 
-        model.addAttribute("players", players);
-        model.addAttribute("teams", teams);
-        model.addAttribute("selectedPlayers", selectedPlayers);
-        return "index";
+        return "redirect:/";
     }
-
-    @PostMapping("/add-guest")
-    public String addGuest(@RequestParam String guestName,
-                           @RequestParam(defaultValue = "가드") String guestPosition,
-                           @RequestParam(value = "selectedPlayers", required = false) List<String> selectedPlayers,
-                           Model model) {
-        String normalizedName = guestName == null ? "" : guestName.trim();
-        String normalizedPosition = normalizePosition(guestPosition);
-
-        if (selectedPlayers != null) {
-            this.selectedPlayers = new ArrayList<>(selectedPlayers);
-        }
-
-        if (normalizedName.isEmpty()) {
-            model.addAttribute("error", "게스트 이름을 입력해주세요.");
-            model.addAttribute("players", players);
-            model.addAttribute("teams", teams);
-            model.addAttribute("selectedPlayers", this.selectedPlayers);
-            return "index";
-        }
-
-        String guestPlayerName = "게스트 - " + normalizedName;
-        boolean exists = players.stream().anyMatch(player -> player.getName().equals(guestPlayerName));
-        if (!exists) {
-            players.add(new Player(guestPlayerName, 180, normalizedPosition, 7, 7, false));
-        }
-
-        if (!this.selectedPlayers.contains(guestPlayerName)) {
-            this.selectedPlayers.add(guestPlayerName);
-        }
-
-        model.addAttribute("players", players);
-        model.addAttribute("teams", teams);
-        model.addAttribute("selectedPlayers", this.selectedPlayers);
-        return "index";
-    }
-
 
     @PostMapping("/upload-image")
     public ResponseEntity<Map<String, Object>> uploadImage(@RequestPart("image") MultipartFile file) {
@@ -303,13 +261,6 @@ public class TeamController {
             case "가드" -> 3;
             default -> 4;
         };
-    }
-
-    private String normalizePosition(String position) {
-        if ("센터".equals(position) || "포워드".equals(position) || "가드".equals(position)) {
-            return position;
-        }
-        return "가드";
     }
 
     // 정확한 반반 분배를 보장하는 팀 선택 메서드 (반반 분배가 최우선)

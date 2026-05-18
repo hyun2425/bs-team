@@ -75,18 +75,9 @@
                 <!-- 에러 메시지 -->
                 <div th:if="${error}" class="error-message" th:text="${error}"></div>
 
-                <div class="guest-add-panel">
-                    <input type="text" id="guestNameInput" placeholder="게스트 이름" maxlength="20">
-                    <select id="guestPositionSelect" aria-label="게스트 포지션">
-                        <option value="가드">가드</option>
-                        <option value="포워드">포워드</option>
-                        <option value="센터">센터</option>
-                    </select>
-                    <button type="button" class="btn btn-add-guest" onclick="addGuest()">게스트 추가</button>
-                </div>
-
                 <div class="player-list">
                     <div th:each="player : ${players}"
+                         th:if="${!#strings.startsWith(player.name, '게스트-')}"
                          class="player-card selectable-player"
                          th:data-player-name="${player.name}"
                          th:data-player-position="${player.position}"
@@ -101,6 +92,33 @@
                             <div><span th:text="${player.position}">포지션</span></div>
                         </div>
                     </div>
+                </div>
+
+                <div class="guest-button-panel">
+                    <button type="button" class="player-card selectable-player guest-shortcut" onclick="selectGuest('게스트-1')" data-player-name="게스트-1" data-guest-name="게스트-1">
+                        <span class="player-name">게스트-1</span>
+                        <span class="player-details">가드</span>
+                    </button>
+                    <button type="button" class="player-card selectable-player guest-shortcut" onclick="selectGuest('게스트-2')" data-player-name="게스트-2" data-guest-name="게스트-2">
+                        <span class="player-name">게스트-2</span>
+                        <span class="player-details">가드</span>
+                    </button>
+                    <button type="button" class="player-card selectable-player guest-shortcut" onclick="selectGuest('게스트-3')" data-player-name="게스트-3" data-guest-name="게스트-3">
+                        <span class="player-name">게스트-3</span>
+                        <span class="player-details">가드</span>
+                    </button>
+                    <button type="button" class="player-card selectable-player guest-shortcut" onclick="selectGuest('게스트-4')" data-player-name="게스트-4" data-guest-name="게스트-4">
+                        <span class="player-name">게스트-4</span>
+                        <span class="player-details">가드</span>
+                    </button>
+                    <button type="button" class="player-card selectable-player guest-shortcut" onclick="selectGuest('게스트-5')" data-player-name="게스트-5" data-guest-name="게스트-5">
+                        <span class="player-name">게스트-5</span>
+                        <span class="player-details">가드</span>
+                    </button>
+                    <button type="button" class="player-card selectable-player guest-shortcut" onclick="selectGuest('게스트-6')" data-player-name="게스트-6" data-guest-name="게스트-6">
+                        <span class="player-name">게스트-6</span>
+                        <span class="player-details">가드</span>
+                    </button>
                 </div>
 
                 <!-- 팀 생성 및 초기화 버튼 -->
@@ -253,43 +271,21 @@
             form.submit();
         }
 
-        function addGuest() {
-            const guestNameInput = document.getElementById('guestNameInput');
-            const guestPositionSelect = document.getElementById('guestPositionSelect');
-            const guestName = guestNameInput.value.trim();
-
-            if (!guestName) {
-                alert('게스트 이름을 입력해주세요.');
-                guestNameInput.focus();
+        function selectGuest(guestName) {
+            const playerElement = document.querySelector(`.selectable-player[data-player-name="${guestName}"]`);
+            if (!playerElement) {
                 return;
             }
 
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '/add-guest';
+            if (!selectedPlayers.includes(guestName)) {
+                selectedPlayers.push(guestName);
+            }
 
-            const nameInput = document.createElement('input');
-            nameInput.type = 'hidden';
-            nameInput.name = 'guestName';
-            nameInput.value = guestName;
-            form.appendChild(nameInput);
-
-            const positionInput = document.createElement('input');
-            positionInput.type = 'hidden';
-            positionInput.name = 'guestPosition';
-            positionInput.value = guestPositionSelect.value;
-            form.appendChild(positionInput);
-
-            selectedPlayers.forEach(playerName => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'selectedPlayers';
-                input.value = playerName;
-                form.appendChild(input);
+            playerElement.classList.add('selected');
+            document.querySelectorAll(`.guest-shortcut[data-guest-name="${guestName}"]`).forEach(element => {
+                element.classList.add('selected');
             });
-
-            document.body.appendChild(form);
-            form.submit();
+            updateUI();
         }
 
         // 선택 초기화
